@@ -1,5 +1,8 @@
 package com.hnpage.ghinomobile.screen
 
+import android.content.Context
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,10 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +24,11 @@ import com.hnpage.ghinomobile.utils.formatAmount
 import com.hnpage.ghinomobile.utils.shareTransactionImage
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
 import com.hnpage.ghinomobile.work.scheduleReminder
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +40,12 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
     var deleteTransaction by remember { mutableStateOf<Transaction?>(null) }
     var confirmUpdateTransaction by remember { mutableStateOf<Transaction?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var fabExpanded by remember { mutableStateOf(false) }
+
+    val filteredTransactions = transactions.filter {
+        it.contactName.contains(searchQuery, ignoreCase = true) ||
+                it.phoneNumber.contains(searchQuery, ignoreCase = true)
+    }
 
     Scaffold(
         topBar = {
@@ -55,15 +66,50 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onTertiary,
-                shape = CircleShape,
-                modifier = Modifier.size(56.dp),
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
-            ) {
-                Text("+", fontSize = 24.sp)
+            Column(horizontalAlignment = Alignment.End) {
+                if (fabExpanded) {
+                    FloatingActionButton(
+                        onClick = {
+                            showAddDialog = true
+                            fabExpanded = false
+                        },
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary,
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .padding(bottom = 8.dp)
+                            .size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch")
+                    }
+                    FloatingActionButton(
+                        onClick = {
+                            exportTransactions(context, filteredTransactions)
+                            fabExpanded = false
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .padding(bottom = 8.dp)
+                            .size(48.dp)
+                    ) {
+                        Icon(Icons.Default.FileDownload, contentDescription = "Xuất giao dịch")
+                    }
+                }
+                FloatingActionButton(
+                    onClick = { fabExpanded = !fabExpanded },
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
+                    shape = CircleShape,
+                    modifier = Modifier.size(56.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = "Mở/Đóng FAB"
+                    )
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.surface
@@ -71,7 +117,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(horizontal = 10.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -88,12 +134,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(
-                    transactions.filter {
-                        it.contactName.contains(searchQuery, ignoreCase = true) ||
-                                it.phoneNumber.contains(searchQuery, ignoreCase = true)
-                    }
-                ) { transaction ->
+                items(filteredTransactions) { transaction ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -112,7 +153,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                             supportingContent = {
                                 Text(
                                     "SĐT: ${transaction.phoneNumber}\n" +
-                                            "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(transaction.date))}\n" +
+                                            "Ngày: ${SimpleDateFormat("dd/MM/yyyy").format(Date(transaction.date))}\n" +
                                             "Ghi chú: ${transaction.note}",
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -140,7 +181,6 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
             }
         }
 
-        // Dialog thêm giao dịch
         if (showAddDialog) {
             TransactionDialog(
                 onDismiss = { showAddDialog = false },
@@ -151,8 +191,6 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                 }
             )
         }
-
-        // Dialog chỉnh sửa giao dịch
         if (editTransaction != null) {
             TransactionDialog(
                 transaction = editTransaction,
@@ -163,54 +201,97 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                 }
             )
         }
-
-        // Dialog xác nhận xóa
         if (deleteTransaction != null) {
             AlertDialog(
                 onDismissRequest = { deleteTransaction = null },
-                title = { Text("Xác nhận xóa", color = MaterialTheme.colorScheme.onSurface) },
-                text = { Text("Bạn có chắc muốn xóa giao dịch này?", color = MaterialTheme.colorScheme.onSurface) },
+                title = { Text("Xác nhận xóa") },
+                text = { Text("Bạn có chắc muốn xóa giao dịch này?") },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.delete(deleteTransaction!!)
                         deleteTransaction = null
-                    }) {
-                        Text("Xác nhận", color = MaterialTheme.colorScheme.primary)
-                    }
+                    }) { Text("Xác nhận") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { deleteTransaction = null }) {
-                        Text("Hủy", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
+                    TextButton(onClick = { deleteTransaction = null }) { Text("Hủy") }
+                }
             )
         }
-
-        // Dialog xác nhận cập nhật
         if (confirmUpdateTransaction != null) {
             AlertDialog(
                 onDismissRequest = { confirmUpdateTransaction = null },
-                title = { Text("Xác nhận cập nhật", color = MaterialTheme.colorScheme.onSurface) },
-                text = { Text("Bạn có chắc muốn cập nhật giao dịch này?", color = MaterialTheme.colorScheme.onSurface) },
+                title = { Text("Xác nhận cập nhật") },
+                text = { Text("Bạn có chắc muốn cập nhật giao dịch này?") },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.update(confirmUpdateTransaction!!)
                         if (confirmUpdateTransaction!!.isReminderSet) scheduleReminder(context, confirmUpdateTransaction!!)
                         confirmUpdateTransaction = null
-                    }) {
-                        Text("Xác nhận", color = MaterialTheme.colorScheme.primary)
-                    }
+                    }) { Text("Xác nhận") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confirmUpdateTransaction = null }) {
-                        Text("Hủy", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(12.dp)
+                    TextButton(onClick = { confirmUpdateTransaction = null }) { Text("Hủy") }
+                }
             )
         }
     }
+}
+
+private fun exportTransactions(context: Context, transactions: List<Transaction>) {
+    // Xuất ra Excel
+    val workbook = XSSFWorkbook()
+    val sheet = workbook.createSheet("TransactionHistory")
+    val header = sheet.createRow(0)
+    header.createCell(0).setCellValue("Tên")
+    header.createCell(1).setCellValue("SĐT")
+    header.createCell(2).setCellValue("Số tiền")
+    header.createCell(3).setCellValue("Loại")
+    header.createCell(4).setCellValue("Ngày")
+    header.createCell(5).setCellValue("Ghi chú")
+
+    transactions.forEachIndexed { index, transaction ->
+        val row = sheet.createRow(index + 1)
+        row.createCell(0).setCellValue(transaction.contactName)
+        row.createCell(1).setCellValue(transaction.phoneNumber)
+        row.createCell(2).setCellValue(transaction.amount)
+        row.createCell(3).setCellValue(if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ")
+        row.createCell(4).setCellValue(SimpleDateFormat("dd/MM/yyyy").format(Date(transaction.date)))
+        row.createCell(5).setCellValue(transaction.note)
+    }
+
+    val excelFile = File(
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+        "TransactionHistory_${System.currentTimeMillis()}.xlsx"
+    )
+    FileOutputStream(excelFile).use { outputStream ->
+        workbook.write(outputStream) // Ghi trực tiếp vào OutputStream
+    }
+    workbook.close()
+
+    // Xuất ra PDF
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 size
+    val page = pdfDocument.startPage(pageInfo)
+    val canvas = page.canvas
+    var yPos = 50f
+    canvas.drawText("Lịch sử giao dịch", 50f, yPos, android.graphics.Paint().apply { textSize = 20f })
+    yPos += 30f
+    transactions.forEach { transaction ->
+        canvas.drawText(
+            "${transaction.contactName}: ${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
+            50f, yPos, android.graphics.Paint().apply { textSize = 14f }
+        )
+        yPos += 20f
+    }
+    pdfDocument.finishPage(page)
+
+    val pdfFile = File(
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+        "TransactionHistory_${System.currentTimeMillis()}.pdf"
+    )
+    pdfDocument.writeTo(FileOutputStream(pdfFile))
+    pdfDocument.close()
+
+    // Thông báo người dùng
+    android.widget.Toast.makeText(context, "Đã xuất file vào Downloads", android.widget.Toast.LENGTH_SHORT).show()
 }
