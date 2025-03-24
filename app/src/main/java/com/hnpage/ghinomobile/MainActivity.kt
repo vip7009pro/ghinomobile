@@ -7,20 +7,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,15 +30,9 @@ import com.hnpage.ghinomobile.screen.TransactionHistoryScreen
 import com.hnpage.ghinomobile.ui.theme.GhinomobileTheme
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
 
-
-
-
-
 class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-            // Xử lý kết quả yêu cầu quyền
-        }
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +46,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val viewModel = DebtViewModel(application)
         setContent {
-            GhinomobileTheme {
+            GhinomobileTheme { // Áp dụng theme
                 DebtApp(viewModel)
             }
         }
@@ -93,7 +84,10 @@ fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar { // Sử dụng NavigationBar thay vì BottomNavigation
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = null) },
             label = { Text("Tổng quan") },
