@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -60,14 +62,70 @@ fun DebtApp(viewModel: DebtViewModel) {
         bottomBar = { BottomNavigationBar(navController) }
     ) { padding ->
         NavHost(navController, startDestination = "overview", Modifier.padding(padding)) {
-            composable("overview") { OverviewScreen(viewModel) }
-            composable("history") { TransactionHistoryScreen(viewModel) }
-            composable("contacts") {
+            composable(
+                route = "overview",
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                }
+            ) { OverviewScreen(viewModel) }
+            composable(
+                route = "history",
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                }
+            ) { TransactionHistoryScreen(viewModel) }
+            composable(
+                route = "contacts",
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                }
+            ) {
                 ContactListScreen(viewModel, onContactClick = { phoneNumber ->
                     navController.navigate("contactDetail/$phoneNumber")
                 })
             }
-            composable("contactDetail/{phoneNumber}") { backStackEntry ->
+            composable(
+                route = "contactDetail/{phoneNumber}",
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                }
+            ) { backStackEntry ->
                 val phoneNumber = backStackEntry.arguments?.getString("phoneNumber") ?: ""
                 ContactDetailScreen(
                     viewModel = viewModel,
