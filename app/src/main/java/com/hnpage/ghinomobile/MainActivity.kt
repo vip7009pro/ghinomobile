@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -26,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -64,8 +68,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DebtApp(viewModel: DebtViewModel) {
     val navController = rememberNavController()
+
+    // Màu nền cố định phong cách thiên nhiên
+    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+
     Scaffold(
-        bottomBar = { BottomNavigationBar(navController) }
+        bottomBar = { BottomNavigationBar(navController) },
+        containerColor = backgroundColor // Áp dụng màu nền cho Scaffold
     ) { padding ->
         NavHost(navController, startDestination = "overview", Modifier.padding(padding)) {
             composable(
@@ -148,25 +157,35 @@ fun BottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Gradient cho NavigationBar - Sắc thái xanh lá thiên nhiên
+    val navBarGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFA5D6A7), // Xanh lá nhạt
+            Color(0xFF4CAF50), // Xanh lá trung
+            Color(0xFF2E7D32)  // Xanh lá đậm
+        )
+    )
+
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        modifier = Modifier.background(navBarGradient), // Áp dụng gradient cho NavigationBar
+        containerColor = Color.Transparent, // Đặt trong suốt để gradient hiển thị
+        contentColor = Color.White // Màu trắng cho icon và text
     ) {
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = null) },
-            label = { Text("Tổng quan") },
+            icon = { Icon(Icons.Default.Home, contentDescription = null, tint = Color.White) },
+            label = { Text("Tổng quan", color = Color.White, fontSize = 12.sp) },
             selected = currentRoute == "overview",
             onClick = { navController.navigate("overview") { popUpTo("overview") { inclusive = true } } }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-            label = { Text("Lịch sử") },
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = Color.White) },
+            label = { Text("Lịch sử", color = Color.White, fontSize = 12.sp) },
             selected = currentRoute == "history",
             onClick = { navController.navigate("history") { popUpTo("overview") { inclusive = false } } }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Contacts, contentDescription = null) },
-            label = { Text("Danh bạ") },
+            icon = { Icon(Icons.Default.Contacts, contentDescription = null, tint = Color.White) },
+            label = { Text("Danh bạ", color = Color.White, fontSize = 12.sp) },
             selected = currentRoute == "contacts",
             onClick = { navController.navigate("contacts") { popUpTo("overview") { inclusive = false } } }
         )

@@ -6,6 +6,8 @@ fun formatAmount(amount: Double): String {
     return when {
         amount >= 1_000_000 -> "${formatter.format(amount / 1_000_000)}M VND"
         amount >= 1_000 -> "${formatter.format(amount / 1_000)}K VND"
+        amount <= -1_000_000 -> "${formatter.format(amount / 1_000_000)}M VND"
+        amount <= -1_000 -> "${formatter.format(amount / 1_000)}K VND"
         else -> amount.toString()
     }
 }

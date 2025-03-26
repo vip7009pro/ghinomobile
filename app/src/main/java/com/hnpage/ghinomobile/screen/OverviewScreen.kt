@@ -13,6 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +23,11 @@ import com.hnpage.ghinomobile.utils.formatAmount
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
 import com.hnpage.ghinomobile.work.scheduleReminder
 import java.util.Calendar
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,19 +62,45 @@ fun OverviewScreen(viewModel: DebtViewModel) {
         if (isGranted) showDialog = true else permissionDenied = true
     }
 
+    // Gradient cho Debit (Nợ) - Sắc thái đỏ
+    val debitGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFFFCC80), // Cam nhạt
+            Color(0xFFFF5722), // Cam đậm
+            Color(0xFFD32F2F)  // Đỏ đậm
+        )
+    )
+
+    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
+    val creditGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFA5D6A7), // Xanh lá nhạt (màu lá non)
+            Color(0xFF4CAF50), // Xanh lá trung (màu rừng)
+            Color(0xFF2E7D32)  // Xanh lá đậm (màu lá trưởng thành)
+        )
+    )
+
+    // Màu nền cố định phong cách thiên nhiên
+    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+
     Scaffold(
-        topBar = {
+     /*   topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
-                    .background(color = MaterialTheme.colorScheme.primary),
+                    .windowInsetsPadding(WindowInsets.statusBars) // Kéo dài lên thanh trạng thái
+                    .background(color = Color.Transparent),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Tổng quan", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Tổng quan",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
             }
-        },
+        },*/
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -86,107 +119,61 @@ fun OverviewScreen(viewModel: DebtViewModel) {
                 Text("+", fontSize = 24.sp)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = backgroundColor // Thay đổi màu nền của Scaffold
     ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 10.dp, vertical = 10.dp),
+                .padding(0.dp)
+                .padding(horizontal = 5.dp, vertical = 5.dp)
+                .background(backgroundColor), // Đảm bảo LazyColumn cũng có cùng màu nền
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceBetween
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(debitGradient)
                     ) {
-                        Text("Tổng nợ tôi", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onError)
-                        Text(text = formatAmount(totalDebt), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxSize(),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Tổng nợ tôi", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                            Text(text = formatAmount(totalDebt), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
                     }
                 }
             }
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Tổng tôi nợ", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSecondary)
-                        Text(formatAmount(totalCredit), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
-                    }
-                }
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(creditGradient)
                     ) {
                         Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxSize(),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Ngày (Nợ)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onError)
-                            Text(formatAmount(dailyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Ngày (Có)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(formatAmount(dailyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
-                        }
-                    }
-                }
-            }
-            // Tương tự cho Tuần, Tháng, Năm (giữ cấu trúc, thay đổi text)
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Tuần (Nợ)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onError)
-                            Text(formatAmount(weeklyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Tuần (Có)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(formatAmount(weeklyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
+                            Text("Tổng tôi nợ", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.White)
+                            Text(formatAmount(totalCredit), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -194,31 +181,49 @@ fun OverviewScreen(viewModel: DebtViewModel) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(debitGradient)
                         ) {
-                            Text("Tháng (Nợ)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onError)
-                            Text(formatAmount(monthlyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Ngày (Nợ)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(dailyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                     Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(creditGradient)
                         ) {
-                            Text("Tháng (Có)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(formatAmount(monthlyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Ngày (Có)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(dailyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -226,31 +231,149 @@ fun OverviewScreen(viewModel: DebtViewModel) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(debitGradient)
                         ) {
-                            Text("Năm (Nợ)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onError)
-                            Text(formatAmount(yearlyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onError)
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Tuần (Nợ)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(weeklyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                     Card(
-                        modifier = Modifier.weight(1f).height(80.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp).fillMaxSize(),
-                            verticalArrangement = Arrangement.SpaceBetween
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(creditGradient)
                         ) {
-                            Text("Năm (Có)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondary)
-                            Text(formatAmount(yearlyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondary)
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Tuần (Có)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(weeklyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(debitGradient)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Tháng (Nợ)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(monthlyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(creditGradient)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Tháng (Có)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(monthlyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(debitGradient)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Năm (Nợ)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(yearlyDebit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(80.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(creditGradient)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Năm (Có)", fontSize = 12.sp, color = Color.White)
+                                Text(formatAmount(yearlyCredit), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -276,7 +399,7 @@ fun OverviewScreen(viewModel: DebtViewModel) {
                         Text("OK", color = MaterialTheme.colorScheme.primary)
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = backgroundColor, // Đồng bộ màu nền với Scaffold
                 shape = RoundedCornerShape(12.dp)
             )
         }

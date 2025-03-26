@@ -17,7 +17,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hnpage.ghinomobile.data.Transaction
@@ -33,13 +36,43 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
     val balances by viewModel.balanceByContact.collectAsState(initial = emptyMap())
     var searchQuery by remember { mutableStateOf("") }
 
+    // Gradient cho Debit (Nợ) - Sắc thái đỏ
+    val debitGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFFFCC80), // Cam nhạt
+            Color(0xFFFF5722), // Cam đậm
+            Color(0xFFD32F2F)  // Đỏ đậm
+        )
+    )
+
+    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
+    val creditGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFA5D6A7), // Xanh lá nhạt
+            Color(0xFF4CAF50), // Xanh lá trung
+            Color(0xFF2E7D32)  // Xanh lá đậm
+        )
+    )
+
+    // Gradient trung tính cho balance = 0
+    val neutralGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFE0E0E0), // Xám nhạt
+            Color(0xFFB0B0B0)  // Xám đậm
+        )
+    )
+
+    // Màu nền cố định phong cách thiên nhiên
+    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+    val textColor = Color(0xFF1B5E20) // Xanh lá đậm để tương phản với nền
+
     Scaffold(
-        topBar = {
+        /*topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
-                    .background(color = MaterialTheme.colorScheme.primary),
+                    .background(color = Color.Transparent),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -50,7 +83,7 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                     fontSize = 20.sp
                 )
             }
-        },
+        },*/
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { /* Không có hành động trực tiếp */ },
@@ -63,12 +96,13 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                 Text("+", fontSize = 24.sp)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = backgroundColor
     ) { padding ->
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .padding(0.dp)
+                .padding(horizontal = 5.dp, vertical = 5.dp)
+                .background(backgroundColor)
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -77,12 +111,19 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = textColor,
+                    unfocusedTextColor = textColor,
+                    disabledTextColor = textColor.copy(alpha = 0.7f),
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface
+                    unfocusedBorderColor = textColor,
+                    disabledBorderColor = textColor.copy(alpha = 0.7f),
+                    focusedLabelColor = textColor,
+                    unfocusedLabelColor = textColor
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
             LazyColumn(
+                modifier = Modifier.background(backgroundColor),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
@@ -93,28 +134,43 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                 ) { (contactPair, balance) ->
                     val (phone, name) = contactPair
                     Card(
-                        modifier = Modifier.fillMaxWidth().clickable { onContactClick(phone) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onContactClick(phone) },
                         shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        ListItem(
-                            headlineContent = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    when {
+                                        balance > 0 -> debitGradient // Nợ tôi
+                                        balance < 0 -> creditGradient // Tôi nợ
+                                        else -> neutralGradient // Không nợ
+                                    }
+                                )
+                                .padding(16.dp)
+                        ) {
+                            Column {
                                 Text(
                                     text = name,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                            },
-                            supportingContent = {
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "SĐT: $phone\nDư nợ: ${formatAmount(balance)}",
+                                    text = "SĐT: $phone\nDư nợ: ${formatAmount(balance)}",
                                     fontSize = 14.sp,
-                                    color = if (balance > 0) MaterialTheme.colorScheme.error else if (balance < 0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
+                                    color = Color.White,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -133,13 +189,34 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
     var confirmUpdateTransaction by remember { mutableStateOf<Transaction?>(null) }
     val contactName = transactions.maxByOrNull { it.date }?.contactName ?: "Không xác định"
 
+    // Gradient cho Debit (Nợ) - Sắc thái đỏ
+    val debitGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFFFCC80), // Cam nhạt
+            Color(0xFFFF5722), // Cam đậm
+            Color(0xFFD32F2F)  // Đỏ đậm
+        )
+    )
+
+    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
+    val creditGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFFA5D6A7), // Xanh lá nhạt
+            Color(0xFF4CAF50), // Xanh lá trung
+            Color(0xFF2E7D32)  // Xanh lá đậm
+        )
+    )
+
+    // Màu nền cố định phong cách thiên nhiên
+    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+
     Scaffold(
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
-                    .background(color = MaterialTheme.colorScheme.primary),
+                    .background(color = Color.Transparent),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -167,55 +244,75 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                 Text("+", fontSize = 24.sp)
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = backgroundColor
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .background(backgroundColor),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(transactions) { transaction ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                color = if (transaction.type == "debit") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
-                                text = "${transaction.contactName}: ${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(transaction.date))}\n" +
-                                        "Ghi chú: ${transaction.note}",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        trailingContent = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(if (transaction.type == "debit") debitGradient else creditGradient)
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    color = Color.White,
+                                    text = "${transaction.contactName}: ${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(transaction.date))}",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Ghi chú: ${transaction.note}",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                             Row {
                                 IconButton(onClick = { editTransaction = transaction }) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White)
                                 }
                                 IconButton(onClick = { deleteTransaction = transaction }) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                                 }
                                 IconButton(onClick = {
                                     val uri = createTransactionImage(context, transaction)
                                     uri?.let { shareTransactionImage(context, it) }
                                 }) {
-                                    Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                                    Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
                                 }
                             }
                         }
-                    )
+                    }
                 }
             }
         }
@@ -273,7 +370,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                         Text("Hủy", color = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = backgroundColor,
                 shape = RoundedCornerShape(12.dp)
             )
         }
@@ -298,7 +395,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                         Text("Hủy", color = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = backgroundColor,
                 shape = RoundedCornerShape(12.dp)
             )
         }
