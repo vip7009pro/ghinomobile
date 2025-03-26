@@ -14,6 +14,8 @@ import com.hnpage.ghinomobile.data.Transaction
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.graphics.createBitmap
+import android.graphics.LinearGradient
+import android.graphics.Shader
 
 fun createTransactionImage(context: Context, transaction: Transaction): Uri? {
     val width = 800
@@ -25,15 +27,50 @@ fun createTransactionImage(context: Context, transaction: Transaction): Uri? {
         typeface = Typeface.DEFAULT_BOLD
     }
 
-    // Nền trắng
-    canvas.drawColor(Color.White.toArgb())
+    // Màu nền cố định phong cách thiên nhiên
+    val backgroundColor = Color(0xFFF1F8E9).toArgb() // Xanh lá rất nhạt
+    canvas.drawColor(backgroundColor)
+
+    // Gradient cho Debit (Nợ) - Sắc thái đỏ
+    val debitGradient = LinearGradient(
+        0f, 0f, width.toFloat(), 0f, // Gradient ngang
+        intArrayOf(
+            Color(0xFFFFCC80).toArgb(), // Cam nhạt
+            Color(0xFFFF5722).toArgb(), // Cam đậm
+            Color(0xFFD32F2F).toArgb()  // Đỏ đậm
+        ),
+        null,
+        Shader.TileMode.CLAMP
+    )
+
+    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
+    val creditGradient = LinearGradient(
+        0f, 0f, width.toFloat(), 0f, // Gradient ngang
+        intArrayOf(
+            Color(0xFFA5D6A7).toArgb(), // Xanh lá nhạt
+            Color(0xFF4CAF50).toArgb(), // Xanh lá trung
+            Color(0xFF2E7D32).toArgb()  // Xanh lá đậm
+        ),
+        null,
+        Shader.TileMode.CLAMP
+    )
+
+    // Áp dụng gradient làm nền dựa trên type
+    paint.shader = if (transaction.type == "debit") debitGradient else creditGradient
+    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+    paint.shader = null // Reset shader sau khi vẽ nền
+
+    // Màu chữ tương phản
+    val textColor = Color(0xFF1B5E20).toArgb() // Xanh lá đậm
 
     // Tiêu đề
-    paint.color = Color.Black.toArgb()
+    paint.color = Color.White.toArgb() // Chữ trắng để nổi bật trên gradient
     paint.textSize = 40f
+    paint.typeface = Typeface.DEFAULT_BOLD
     canvas.drawText("Rượu-Gạo Tươi Hòa - Thông tin giao dịch", 50f, 80f, paint)
 
     // Nội dung
+    paint.color = Color.White.toArgb() // Chữ trắng để tương phản với gradient
     paint.textSize = 30f
     paint.typeface = Typeface.DEFAULT
     val lines = listOf(
