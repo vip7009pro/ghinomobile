@@ -124,7 +124,7 @@ fun TransactionDialog(
             color = backgroundColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 500.dp)
+                .height(600.dp)
                 .padding(16.dp)
         ) {
             Box(
@@ -342,13 +342,11 @@ fun TransactionDialog(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(60.dp))
                     }
 
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         TextButton(onClick = onDismiss) {
