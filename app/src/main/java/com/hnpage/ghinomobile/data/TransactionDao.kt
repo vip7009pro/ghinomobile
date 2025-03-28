@@ -18,10 +18,10 @@ interface TransactionDao {
     @Delete
     suspend fun delete(transaction: Transaction)
 
-    @Query("SELECT * FROM transactions")
+    @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
 
-    @Query("SELECT * FROM transactions WHERE phoneNumber = :phoneNumber")
+    @Query("SELECT * FROM transactions WHERE phoneNumber = :phoneNumber ORDER BY date DESC")
     fun getTransactionsByPhone(phoneNumber: String): Flow<List<Transaction>>
 
 }

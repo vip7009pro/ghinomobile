@@ -21,6 +21,6 @@ interface PaymentDao {
     @Query("SELECT * FROM payments WHERE transactionId = :transactionId")
     fun getPaymentsByTransaction(transactionId: String): Flow<List<Payment>>
 
-    @Query("SELECT * FROM payments")
+    @Query("SELECT * FROM payments ORDER BY date DESC")
     fun getAllPayments(): Flow<List<Payment>>
 }

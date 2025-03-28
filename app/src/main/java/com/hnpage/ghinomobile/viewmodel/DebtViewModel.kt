@@ -15,15 +15,21 @@ class DebtViewModel(application: Application) : AndroidViewModel(application) {
     val payments: Flow<List<Payment>> = repository.getAllPayments()
 
     // Tính toán số dư tổng quát cho từng liên hệ (dư nợ còn lại)
-    val balanceByContact: Flow<Map<Pair<String, String>, Double>> = transactions.map { list ->
-        list.groupBy { Pair(it.phoneNumber, it.contactName) }.mapValues { entry ->
-            entry.value.sumOf { t -> if (t.type == "debit") t.amount else -t.amount }
+    val balanceByContact: Flow<Map<Pair<String, String>, Double>> = combine(transactions, payments) { txs, pays ->
+        txs.groupBy { Pair(it.phoneNumber, it.contactName) }.mapValues { entry ->
+            val transactionsForContact = entry.value
+            val totalDebit = transactionsForContact.filter { it.type == "debit" }.sumOf { it.amount }
+            val totalCredit = transactionsForContact.filter { it.type == "credit" }.sumOf { it.amount }
+            val totalPaid = pays.filter { payment ->
+                transactionsForContact.any { it.id == payment.transactionId }
+            }.sumOf { it.amount }
+            totalDebit - totalCredit - totalPaid // Dương: người khác nợ tôi; Âm: tôi nợ người khác
         }.mapKeys { entry ->
-            val latestTransaction = list.filter { it.phoneNumber == entry.key.first }
+            val latestTransaction = txs.filter { it.phoneNumber == entry.key.first }
                 .maxByOrNull { it.date }
             Pair(entry.key.first, latestTransaction?.contactName ?: entry.key.second)
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     // Tổng nợ ghi nhận từ debit (nợ tôi)
     val totalDebit: Flow<Double> = transactions.map { list ->

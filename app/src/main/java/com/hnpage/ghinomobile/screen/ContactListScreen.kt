@@ -115,8 +115,8 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                                 .fillMaxWidth()
                                 .background(
                                     when {
-                                        remainingBalance > 0 -> debitGradient // Nợ tôi (chưa trả hết)
-                                        remainingBalance < 0 -> creditGradient // Tôi nợ (chưa trả hết)
+                                        (totalDebt-totalPaid) > 0 -> debitGradient // Nợ tôi (chưa trả hết)
+                                        (totalDebt-totalPaid) < 0 -> creditGradient // Tôi nợ (chưa trả hết)
                                         else -> neutralGradient // Không nợ
                                     }
                                 )
@@ -154,7 +154,7 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "Dư nợ: ${formatAmount(remainingBalance)}",
+                                    text = "Dư nợ: ${formatAmount(totalDebt-totalPaid)}",
                                     fontSize = 14.sp,
                                     color = Color.White,
                                     maxLines = 1,
@@ -254,9 +254,9 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                             .fillMaxWidth()
                             .background(
                                 when {
-                                    remainingAmount <= 0 -> creditGradient // Đã trả hết
+                                    remainingAmount == 0.0 -> creditGradient // Đã trả hết
                                     transaction.type == "debit" -> debitGradient // Nợ tôi, chưa trả hết
-                                    else -> creditGradient // Tôi nợ, chưa trả hết
+                                    else -> debitGradient // Tôi nợ, chưa trả hết
                                 }
                             )
                             .padding(16.dp)
@@ -319,7 +319,10 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                                     }) {
                                         Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
                                     }
-                                    IconButton(onClick = { showPaymentDialog = transaction }) {
+                                    IconButton(onClick = {
+                                        //make showPaymentDialog = transaction with amount = remainingAmount
+                                        showPaymentDialog = transaction.copy(amount  = remainingAmount)
+                                    }) {
                                         Icon(Icons.Default.Money, contentDescription = "Thêm thanh toán", tint = Color.White)
                                     }
                                 }

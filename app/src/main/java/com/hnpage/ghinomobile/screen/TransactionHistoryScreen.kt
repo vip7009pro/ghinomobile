@@ -218,7 +218,9 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                                         }) {
                                             Icon(Icons.Default.Share, contentDescription = "Chia sẻ", tint = Color.White)
                                         }
-                                        IconButton(onClick = { showPaymentDialog = transaction }) {
+                                        IconButton(onClick = {
+                                            showPaymentDialog = transaction.copy(amount  = remainingAmount)
+                                        }) {
                                             Icon(Icons.Default.Money, contentDescription = "Thêm thanh toán", tint = Color.White)
                                         }
                                     }
