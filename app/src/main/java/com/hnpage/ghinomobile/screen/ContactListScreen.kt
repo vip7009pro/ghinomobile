@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -23,67 +24,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hnpage.ghinomobile.data.Payment
 import com.hnpage.ghinomobile.data.Transaction
 import com.hnpage.ghinomobile.utils.createTransactionImage
 import com.hnpage.ghinomobile.utils.formatAmount
 import com.hnpage.ghinomobile.utils.shareTransactionImage
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
 import com.hnpage.ghinomobile.work.scheduleReminder
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit) {
-    val balances by viewModel.balanceByContact.collectAsState(initial = emptyMap())
+    val contactStats by viewModel.getContactStats().collectAsState(initial = emptyMap())
     var searchQuery by remember { mutableStateOf("") }
 
-    // Gradient cho Debit (Nợ) - Sắc thái đỏ
     val debitGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFFFCC80), // Cam nhạt
-            Color(0xFFFF5722), // Cam đậm
-            Color(0xFFD32F2F)  // Đỏ đậm
-        )
+        colors = listOf(Color(0xFFD32F2F),Color(0xFFFF5722), Color(0xFFFFCC80))
     )
-
-    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
     val creditGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFA5D6A7), // Xanh lá nhạt
-            Color(0xFF4CAF50), // Xanh lá trung
-            Color(0xFF2E7D32)  // Xanh lá đậm
-        )
+        colors = listOf(Color(0xFF2E7D32),Color(0xFF4CAF50), Color(0xFFA5D6A7))
     )
-
-    // Gradient trung tính cho balance = 0
     val neutralGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFE0E0E0), // Xám nhạt
-            Color(0xFFB0B0B0)  // Xám đậm
-        )
+        colors = listOf(Color(0xFF2E7D32),Color(0xFF4CAF50), Color(0xFFA5D6A7))
     )
-
-    // Màu nền cố định phong cách thiên nhiên
-    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
-    val textColor = Color(0xFF1B5E20) // Xanh lá đậm để tương phản với nền
+    val backgroundColor = Color(0xFFF1F8E9)
 
     Scaffold(
-        /*topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .background(color = Color.Transparent),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Danh bạ",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            }
-        },*/
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { /* Không có hành động trực tiếp */ },
@@ -111,14 +79,14 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = textColor,
-                    unfocusedTextColor = textColor,
-                    disabledTextColor = textColor.copy(alpha = 0.7f),
+                    focusedTextColor = Color(0xFF1B5E20),
+                    unfocusedTextColor = Color(0xFF1B5E20),
+                    disabledTextColor = Color(0xFF1B5E20).copy(alpha = 0.7f),
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = textColor,
-                    disabledBorderColor = textColor.copy(alpha = 0.7f),
-                    focusedLabelColor = textColor,
-                    unfocusedLabelColor = textColor
+                    unfocusedBorderColor = Color(0xFF1B5E20),
+                    disabledBorderColor = Color(0xFF1B5E20).copy(alpha = 0.7f),
+                    focusedLabelColor = Color(0xFF1B5E20),
+                    unfocusedLabelColor = Color(0xFF1B5E20)
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -127,12 +95,14 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
-                    balances.toList().filter { (contactPair, _) ->
+                    contactStats.toList().filter { (contactPair, _) ->
                         val (phone, name) = contactPair
                         name.contains(searchQuery, ignoreCase = true) || phone.contains(searchQuery, ignoreCase = true)
                     }
-                ) { (contactPair, balance) ->
+                ) { (contactPair, stats) ->
                     val (phone, name) = contactPair
+                    val (totalDebt, totalPaid, remainingBalance) = stats
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -145,8 +115,8 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                                 .fillMaxWidth()
                                 .background(
                                     when {
-                                        balance > 0 -> debitGradient // Nợ tôi
-                                        balance < 0 -> creditGradient // Tôi nợ
+                                        remainingBalance > 0 -> debitGradient // Nợ tôi (chưa trả hết)
+                                        remainingBalance < 0 -> creditGradient // Tôi nợ (chưa trả hết)
                                         else -> neutralGradient // Không nợ
                                     }
                                 )
@@ -163,10 +133,31 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "SĐT: $phone\nDư nợ: ${formatAmount(balance)}",
+                                    text = "SĐT: $phone",
                                     fontSize = 14.sp,
                                     color = Color.White,
-                                    maxLines = 2,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Tổng nợ: ${formatAmount(totalDebt)}",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Tổng đã trả: ${formatAmount(totalPaid)}",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Dư nợ: ${formatAmount(remainingBalance)}",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
@@ -183,32 +174,27 @@ fun ContactListScreen(viewModel: DebtViewModel, onContactClick: (String) -> Unit
 fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val transactions by viewModel.getTransactionsByPhone(phoneNumber).collectAsState(initial = emptyList())
+    val balances by viewModel.balanceByContact.collectAsState(initial = emptyMap())
     var showAddDialog by remember { mutableStateOf(false) }
+    var showPaymentDialog by remember { mutableStateOf<Transaction?>(null) }
     var editTransaction by remember { mutableStateOf<Transaction?>(null) }
     var deleteTransaction by remember { mutableStateOf<Transaction?>(null) }
     var confirmUpdateTransaction by remember { mutableStateOf<Transaction?>(null) }
+    var editPayment by remember { mutableStateOf<Payment?>(null) }
+    var deletePayment by remember { mutableStateOf<Payment?>(null) }
     val contactName = transactions.maxByOrNull { it.date }?.contactName ?: "Không xác định"
+    val balance = balances.entries.find { it.key.first == phoneNumber }?.value ?: 0.0
 
-    // Gradient cho Debit (Nợ) - Sắc thái đỏ
     val debitGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFFFCC80), // Cam nhạt
-            Color(0xFFFF5722), // Cam đậm
-            Color(0xFFD32F2F)  // Đỏ đậm
-        )
+        colors = listOf(Color(0xFFD32F2F),Color(0xFFFF5722), Color(0xFFFFCC80))
     )
-
-    // Gradient cho Credit (Có) - Sắc thái xanh lá thiên nhiên
     val creditGradient = Brush.horizontalGradient(
-        colors = listOf(
-            Color(0xFFA5D6A7), // Xanh lá nhạt
-            Color(0xFF4CAF50), // Xanh lá trung
-            Color(0xFF2E7D32)  // Xanh lá đậm
-        )
+        colors = listOf(Color(0xFF2E7D32),Color(0xFF4CAF50), Color(0xFFA5D6A7))
     )
-
-    // Màu nền cố định phong cách thiên nhiên
-    val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+    val neutralGradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFE0E0E0), Color(0xFFB0B0B0)) // Không nợ (xám)
+    )
+    val backgroundColor = Color(0xFFF1F8E9)
 
     Scaffold(
         topBar = {
@@ -254,6 +240,10 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(transactions) { transaction ->
+                val payments by viewModel.getPaymentsByTransaction(transaction.id).collectAsState(initial = emptyList())
+                val paidAmount by viewModel.getPaidAmountForTransaction(transaction.id).collectAsState(initial = 0.0)
+                val remainingAmount = transaction.amount - paidAmount
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
@@ -262,53 +252,109 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(if (transaction.type == "debit") debitGradient else creditGradient)
+                            .background(
+                                when {
+                                    remainingAmount <= 0 -> creditGradient // Đã trả hết
+                                    transaction.type == "debit" -> debitGradient // Nợ tôi, chưa trả hết
+                                    else -> creditGradient // Tôi nợ, chưa trả hết
+                                }
+                            )
                             .padding(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    color = Color.White,
-                                    text = "${transaction.contactName}: ${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(transaction.date))}",
-                                    fontSize = 14.sp,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = "Ghi chú: ${transaction.note}",
-                                    fontSize = 14.sp,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        color = Color.White,
+                                        text = transaction.contactName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        color = Color.White,
+                                        text = "${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+
+                                    Text(
+                                        text = "Còn lại: ${formatAmount(remainingAmount)}",
+                                        fontSize = 14.sp,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy").format(Date(transaction.date))}",
+                                        fontSize = 14.sp,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "Ghi chú: ${transaction.note}",
+                                        fontSize = 14.sp,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                                Column {
+                                    IconButton(onClick = { editTransaction = transaction }) {
+                                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White)
+                                    }
+                                    IconButton(onClick = { deleteTransaction = transaction }) {
+                                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
+                                    }
+                                    IconButton(onClick = {
+                                        val uri = createTransactionImage(context, transaction, balance, paidAmount, payments)
+                                        uri?.let { shareTransactionImage(context, it) }
+                                    }) {
+                                        Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
+                                    }
+                                    IconButton(onClick = { showPaymentDialog = transaction }) {
+                                        Icon(Icons.Default.Money, contentDescription = "Thêm thanh toán", tint = Color.White)
+                                    }
+                                }
                             }
-                            Row {
-                                IconButton(onClick = { editTransaction = transaction }) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White)
-                                }
-                                IconButton(onClick = { deleteTransaction = transaction }) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                                }
-                                IconButton(onClick = {
-                                    val uri = createTransactionImage(context, transaction)
-                                    uri?.let { shareTransactionImage(context, it) }
-                                }) {
-                                    Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)
+                            if (payments.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Lịch sử thanh toán:",
+                                    fontSize = 14.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                payments.forEach { payment ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "- ${formatAmount(payment.amount)} (Ngày: ${SimpleDateFormat("dd/MM/yyyy").format(Date(payment.date))}) - ${payment.note}",
+                                            fontSize = 12.sp,
+                                            color = Color.White,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Row {
+                                            IconButton(onClick = { editPayment = payment }) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Sửa thanh toán", tint = Color.White, modifier = Modifier.size(16.dp))
+                                            }
+                                            IconButton(onClick = { deletePayment = payment }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Xóa thanh toán", tint = Color.White, modifier = Modifier.size(16.dp))
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -317,41 +363,71 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
             }
         }
 
-        // Dialog thêm giao dịch
         if (showAddDialog) {
             TransactionDialog(
-                transaction = Transaction(
-                    id = "",
-                    contactName = contactName,
-                    phoneNumber = phoneNumber,
-                    amount = 0.0,
-                    type = "debit",
-                    date = System.currentTimeMillis(),
-                    note = "",
-                    isReminderSet = false
-                ),
                 onDismiss = { showAddDialog = false },
-                onAdd = { transaction ->
-                    viewModel.insert(transaction)
+                onAddTransaction = { transaction ->
+                    viewModel.insertTransaction(transaction)
                     if (transaction.isReminderSet) scheduleReminder(context, transaction)
                     showAddDialog = false
+                },
+                onAddPayment = {},
+                prefilledContactName = contactName,
+                prefilledPhoneNumber = phoneNumber
+            )
+        }
+
+        if (showPaymentDialog != null) {
+            TransactionDialog(
+                transaction = showPaymentDialog,
+                isPaymentMode = true,
+                isEditPaymentMode = false,
+                onDismiss = { showPaymentDialog = null },
+                onAddTransaction = {},
+                onAddPayment = { payment ->
+                    viewModel.insertPayment(payment)
+                    showPaymentDialog = null
                 }
             )
         }
 
-        // Dialog chỉnh sửa giao dịch
         if (editTransaction != null) {
             TransactionDialog(
                 transaction = editTransaction,
+                isPaymentMode = false,
+                isEditPaymentMode = false,
                 onDismiss = { editTransaction = null },
-                onAdd = { updated ->
+                onAddTransaction = { updated ->
                     confirmUpdateTransaction = updated
                     editTransaction = null
+                },
+                onAddPayment = {}
+            )
+        }
+
+        if (editPayment != null) {
+            TransactionDialog(
+                transaction = Transaction(
+                    id = editPayment!!.transactionId,
+                    contactName = contactName,
+                    phoneNumber = phoneNumber,
+                    amount = editPayment!!.amount,
+                    type = "",
+                    date = 0L,
+                    note = editPayment!!.note,
+                    isReminderSet = false
+                ),
+                isPaymentMode = true,
+                isEditPaymentMode = true,
+                onDismiss = { editPayment = null },
+                onAddTransaction = {},
+                onAddPayment = { updatedPayment ->
+                    viewModel.updatePayment(updatedPayment.copy(id = editPayment!!.id, transactionId = editPayment!!.transactionId))
+                    editPayment = null
                 }
             )
         }
 
-        // Dialog xác nhận xóa
         if (deleteTransaction != null) {
             AlertDialog(
                 onDismissRequest = { deleteTransaction = null },
@@ -359,7 +435,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                 text = { Text("Bạn có chắc muốn xóa giao dịch này?", color = MaterialTheme.colorScheme.onSurface) },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.delete(deleteTransaction!!)
+                        viewModel.deleteTransaction(deleteTransaction!!)
                         deleteTransaction = null
                     }) {
                         Text("Xác nhận", color = MaterialTheme.colorScheme.primary)
@@ -375,7 +451,29 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
             )
         }
 
-        // Dialog xác nhận cập nhật
+        if (deletePayment != null) {
+            AlertDialog(
+                onDismissRequest = { deletePayment = null },
+                title = { Text("Xác nhận xóa", color = MaterialTheme.colorScheme.onSurface) },
+                text = { Text("Bạn có chắc muốn xóa lần thanh toán này?", color = MaterialTheme.colorScheme.onSurface) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deletePayment(deletePayment!!)
+                        deletePayment = null
+                    }) {
+                        Text("Xác nhận", color = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deletePayment = null }) {
+                        Text("Hủy", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                },
+                containerColor = backgroundColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+
         if (confirmUpdateTransaction != null) {
             AlertDialog(
                 onDismissRequest = { confirmUpdateTransaction = null },
@@ -383,7 +481,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                 text = { Text("Bạn có chắc muốn cập nhật giao dịch này?", color = MaterialTheme.colorScheme.onSurface) },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.update(confirmUpdateTransaction!!)
+                        viewModel.updateTransaction(confirmUpdateTransaction!!)
                         if (confirmUpdateTransaction!!.isReminderSet) scheduleReminder(context, confirmUpdateTransaction!!)
                         confirmUpdateTransaction = null
                     }) {

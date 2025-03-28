@@ -23,4 +23,5 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE phoneNumber = :phoneNumber")
     fun getTransactionsByPhone(phoneNumber: String): Flow<List<Transaction>>
+
 }
