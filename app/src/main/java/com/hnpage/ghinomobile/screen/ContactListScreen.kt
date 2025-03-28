@@ -314,7 +314,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                                     }
                                     IconButton(onClick = {
-                                        val uri = createTransactionImage(context, transaction, balance, paidAmount, payments)
+                                        val uri = createTransactionImage(context, transaction, transaction.amount- paidAmount, paidAmount, payments)
                                         uri?.let { shareTransactionImage(context, it) }
                                     }) {
                                         Icon(Icons.Default.Share, contentDescription = null, tint = Color.White)

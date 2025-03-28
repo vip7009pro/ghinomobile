@@ -80,9 +80,9 @@ fun createTransactionImage(
     // Áp dụng gradient làm nền dựa trên trạng thái thanh toán
     val remainingAmount = transaction.amount - paidAmount
     paint.shader = when {
-        remainingAmount <= 0 -> creditGradient // Đã trả hết
+        remainingAmount == 0.0 -> creditGradient // Đã trả hết
         transaction.type == "debit" -> debitGradient // Nợ tôi, chưa trả hết
-        else -> creditGradient // Tôi nợ, chưa trả hết
+        else -> debitGradient // Tôi nợ, chưa trả hết
     }
     canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
     paint.shader = null // Reset shader sau khi vẽ nền

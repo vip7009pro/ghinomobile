@@ -213,7 +213,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                                             Icon(Icons.Default.Delete, contentDescription = "Xóa giao dịch", tint = Color.White)
                                         }
                                         IconButton(onClick = {
-                                            val uri = createTransactionImage(context, transaction, balance, paidAmount, payments)
+                                            val uri = createTransactionImage(context, transaction, transaction.amount- paidAmount, paidAmount, payments)
                                             uri?.let { shareTransactionImage(context, it) }
                                         }) {
                                             Icon(Icons.Default.Share, contentDescription = "Chia sẻ", tint = Color.White)
