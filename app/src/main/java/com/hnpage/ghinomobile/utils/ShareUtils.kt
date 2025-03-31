@@ -101,7 +101,7 @@ fun createTransactionImage(
         "SĐT: ${transaction.phoneNumber}",
         "Số tiền: ${formatAmount(transaction.amount)} (${if (transaction.type == "debit") "Nợ tôi" else "Tôi nợ"})",
         "Đã trả: ${formatAmount(paidAmount)} - Còn lại: ${formatAmount(remainingAmount)} ${if(remainingAmount <= 0) " (Đã trả hết)" else ""}",
-        "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(transaction.date))}",
+        "Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(java.util.Date(transaction.date))}",
         "Ghi chú: ${transaction.note}",
         "Dư nợ: ${formatAmount(balance)}"
     )
@@ -118,7 +118,7 @@ fun createTransactionImage(
 
         paint.typeface = Typeface.DEFAULT
         payments.forEachIndexed { index, payment ->
-            val paymentLine = "- ${formatAmount(payment.amount)} (Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(java.util.Date(payment.date))}) - ${payment.note}"
+            val paymentLine = "- ${formatAmount(payment.amount)} (${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(java.util.Date(payment.date))}) - ${payment.note}"
             canvas.drawText(paymentLine, 50f, paymentStartY + 40f + index * 40f, paint)
         }
     }
