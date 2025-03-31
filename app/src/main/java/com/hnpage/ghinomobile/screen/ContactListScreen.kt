@@ -292,7 +292,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                                         color = Color.White
                                     )
                                     Text(
-                                        text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy").format(Date(transaction.date))}",
+                                        text = "Ngày: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(Date(transaction.date))}",
                                         fontSize = 14.sp,
                                         color = Color.White,
                                         maxLines = 1,
@@ -344,7 +344,7 @@ fun ContactDetailScreen(viewModel: DebtViewModel, phoneNumber: String, onBack: (
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "- ${formatAmount(payment.amount)} (Ngày: ${SimpleDateFormat("dd/MM/yyyy").format(Date(payment.date))}) - ${payment.note}",
+                                            text = "- ${formatAmount(payment.amount)} (${SimpleDateFormat("dd/MM/yyyy HH:mm").format(Date(payment.date))}) - ${payment.note}",
                                             fontSize = 12.sp,
                                             color = Color.White,
                                             modifier = Modifier.weight(1f)

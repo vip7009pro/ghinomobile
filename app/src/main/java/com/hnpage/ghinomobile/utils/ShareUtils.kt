@@ -118,7 +118,7 @@ fun createTransactionImage(
 
         paint.typeface = Typeface.DEFAULT
         payments.forEachIndexed { index, payment ->
-            val paymentLine = "- ${formatAmount(payment.amount)} (Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(payment.date))}) - ${payment.note}"
+            val paymentLine = "- ${formatAmount(payment.amount)} (Ngày: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(java.util.Date(payment.date))}) - ${payment.note}"
             canvas.drawText(paymentLine, 50f, paymentStartY + 40f + index * 40f, paint)
         }
     }
