@@ -1,7 +1,9 @@
 package com.hnpage.ghinomobile
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,7 +27,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,7 +45,9 @@ import com.hnpage.ghinomobile.screen.ContactListScreen
 import com.hnpage.ghinomobile.screen.OverviewScreen
 import com.hnpage.ghinomobile.screen.TransactionHistoryScreen
 import com.hnpage.ghinomobile.ui.theme.GhinomobileTheme
+import com.hnpage.ghinomobile.utils.GoogleSheetsUtil
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher =
@@ -63,7 +70,14 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("thong bao","thoat app")
+
+    }
 }
+
 
 @Composable
 fun DebtApp(viewModel: DebtViewModel) {
@@ -71,7 +85,16 @@ fun DebtApp(viewModel: DebtViewModel) {
 
     // Màu nền cố định phong cách thiên nhiên
     val backgroundColor = Color(0xFFF1F8E9) // Xanh lá rất nhạt
+    val transactions by viewModel.transactions.collectAsState(initial = emptyList())
+    val allPayments = viewModel.payments.collectAsState(initial = emptyList()).value
+    val coroutineScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
+    LaunchedEffect(transactions, allPayments) {
+        coroutineScope.launch { // Sử dụng coroutine để gọi suspend function
+            GoogleSheetsUtil.syncTransactionsToSheets(context, transactions, allPayments)
+        }
+    }
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
         containerColor = backgroundColor // Áp dụng màu nền cho Scaffold
@@ -80,33 +103,34 @@ fun DebtApp(viewModel: DebtViewModel) {
             composable(
                 route = "overview",
                 enterTransition = {
-                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                    if (initialState.destination.route in listOf("history", "contacts")) { slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500)) } else { slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500)) }
                 },
                 exitTransition = {
-                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                    if (targetState.destination.route in listOf("history", "contacts")) { slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500)) } else { slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500)) }
                 },
                 popEnterTransition = {
-                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                    if (initialState.destination.route in listOf("history", "contacts")) { slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500)) } else { slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500)) }
                 },
                 popExitTransition = {
-                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                    if (targetState.destination.route in listOf("history", "contacts")) { slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500)) } else { slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500)) }
                 }
             ) { OverviewScreen(viewModel) }
             composable(
                 route = "history",
                 enterTransition = {
-                    slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500))
+                    if (initialState.destination.route == "contacts") { slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500)) } else { slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500)) }
                 },
                 exitTransition = {
-                    slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500))
+                    if (targetState.destination.route == "contacts") { slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500)) } else { slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500)) }
                 },
                 popEnterTransition = {
-                    slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500))
+                    if (initialState.destination.route == "contacts") { slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn(animationSpec = tween(500)) } else { slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn(animationSpec = tween(500)) }
                 },
                 popExitTransition = {
-                    slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500))
+                    if (targetState.destination.route == "contacts") { slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut(animationSpec = tween(500)) } else { slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut(animationSpec = tween(500)) }
                 }
             ) { TransactionHistoryScreen(viewModel) }
+
             composable(
                 route = "contacts",
                 enterTransition = {

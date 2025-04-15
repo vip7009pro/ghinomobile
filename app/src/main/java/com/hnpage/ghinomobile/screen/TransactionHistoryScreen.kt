@@ -24,11 +24,14 @@ import androidx.compose.ui.unit.sp
 import com.hnpage.ghinomobile.data.Payment
 import com.hnpage.ghinomobile.data.Transaction
 import com.hnpage.ghinomobile.utils.createTransactionImage
+import com.hnpage.ghinomobile.utils.GoogleSheetsUtil
 import androidx.compose.ui.text.style.TextOverflow
 import com.hnpage.ghinomobile.utils.formatAmount
 import com.hnpage.ghinomobile.utils.shareTransactionImage
 import com.hnpage.ghinomobile.viewmodel.DebtViewModel
 import com.hnpage.ghinomobile.work.scheduleReminder
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileOutputStream
@@ -51,6 +54,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
     var deletePayment by remember { mutableStateOf<Payment?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var fabExpanded by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val filteredTransactions = transactions.filter {
         it.contactName.contains(searchQuery, ignoreCase = true) ||
@@ -58,10 +62,10 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
     }
 
     val debitGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFD32F2F),Color(0xFFFF5722), Color(0xFFFFCC80))
+        colors = listOf(Color(0xFFD32F2F), Color(0xFFFF5722), Color(0xFFFFCC80))
     )
     val creditGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF2E7D32),Color(0xFF4CAF50), Color(0xFFA5D6A7))
+        colors = listOf(Color(0xFF2E7D32), Color(0xFF4CAF50), Color(0xFFA5D6A7))
     )
     val backgroundColor = Color(0xFFF1F8E9)
     val textColor = Color(0xFF1B5E20)
@@ -80,13 +84,27 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                         Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch")
                     }
                     FloatingActionButton(
-                        onClick = { exportTransactions(context, filteredTransactions,allPayments); fabExpanded = false },
+                        onClick = { exportTransactions(context, filteredTransactions, allPayments); fabExpanded = false },
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,
                         shape = CircleShape,
                         modifier = Modifier.padding(bottom = 8.dp).size(48.dp)
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = "Xuất giao dịch")
+                    }
+                    FloatingActionButton(
+                        onClick = {
+                            coroutineScope.launch { // Sử dụng coroutine để gọi suspend function
+                                GoogleSheetsUtil.syncTransactionsToSheets(context, transactions, allPayments)
+                            }
+                            fabExpanded = false
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = CircleShape,
+                        modifier = Modifier.padding(bottom = 8.dp).size(48.dp)
+                    ) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = "Đồng bộ Google Sheets")
                     }
                 }
                 FloatingActionButton(
@@ -213,13 +231,13 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                                             Icon(Icons.Default.Delete, contentDescription = "Xóa giao dịch", tint = Color.White)
                                         }
                                         IconButton(onClick = {
-                                            val uri = createTransactionImage(context, transaction, transaction.amount- paidAmount, paidAmount, payments)
+                                            val uri = createTransactionImage(context, transaction, transaction.amount - paidAmount, paidAmount, payments)
                                             uri?.let { shareTransactionImage(context, it) }
                                         }) {
                                             Icon(Icons.Default.Share, contentDescription = "Chia sẻ", tint = Color.White)
                                         }
                                         IconButton(onClick = {
-                                            showPaymentDialog = transaction.copy(amount  = remainingAmount)
+                                            showPaymentDialog = transaction.copy(amount = remainingAmount)
                                         }) {
                                             Icon(Icons.Default.Money, contentDescription = "Thêm thanh toán", tint = Color.White)
                                         }
@@ -281,7 +299,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
             TransactionDialog(
                 transaction = editTransaction,
                 isPaymentMode = false,
-                isEditPaymentMode = false, // Không phải sửa thanh toán
+                isEditPaymentMode = false,
                 onDismiss = { editTransaction = null },
                 onAddTransaction = { updated ->
                     confirmUpdateTransaction = updated
@@ -295,7 +313,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
             TransactionDialog(
                 transaction = showPaymentDialog,
                 isPaymentMode = true,
-                isEditPaymentMode = false, // Thêm thanh toán
+                isEditPaymentMode = false,
                 onDismiss = { showPaymentDialog = null },
                 onAddTransaction = {},
                 onAddPayment = { payment ->
@@ -318,7 +336,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                     isReminderSet = false
                 ),
                 isPaymentMode = true,
-                isEditPaymentMode = true, // Sửa thanh toán
+                isEditPaymentMode = true,
                 onDismiss = { editPayment = null },
                 onAddTransaction = {},
                 onAddPayment = { updatedPayment ->

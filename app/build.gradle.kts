@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.Packaging
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,6 +10,12 @@ plugins {
 android {
     namespace = "com.hnpage.ghinomobile"
     compileSdk = 35
+
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"  // Thêm một String
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hnpage.ghinomobile"
@@ -40,6 +48,10 @@ android {
 }
 
 dependencies {
+    implementation (libs.google.api.client)
+    implementation (libs.google.oauth.client.jetty)
+    implementation (libs.google.api.services.sheets)
+    implementation (libs.google.auth.library.oauth2.http)
     implementation (libs.poi)
     implementation (libs.poi.ooxml)
     implementation(libs.androidx.core.ktx)
