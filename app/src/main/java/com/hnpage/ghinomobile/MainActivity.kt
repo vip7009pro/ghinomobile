@@ -92,7 +92,7 @@ fun DebtApp(viewModel: DebtViewModel) {
 
     LaunchedEffect(transactions, allPayments) {
         coroutineScope.launch { // Sử dụng coroutine để gọi suspend function
-            GoogleSheetsUtil.syncTransactionsToSheets(context, transactions, allPayments)
+            //GoogleSheetsUtil.syncTransactionsToSheets(context, transactions, allPayments)
         }
     }
     Scaffold(

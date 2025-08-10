@@ -92,7 +92,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = "Xuất giao dịch")
                     }
-                    FloatingActionButton(
+                    /*FloatingActionButton(
                         onClick = {
                             coroutineScope.launch { // Sử dụng coroutine để gọi suspend function
                                 GoogleSheetsUtil.syncTransactionsToSheets(context, transactions, allPayments)
@@ -105,7 +105,7 @@ fun TransactionHistoryScreen(viewModel: DebtViewModel) {
                         modifier = Modifier.padding(bottom = 8.dp).size(48.dp)
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = "Đồng bộ Google Sheets")
-                    }
+                    }*/
                 }
                 FloatingActionButton(
                     onClick = { fabExpanded = !fabExpanded },

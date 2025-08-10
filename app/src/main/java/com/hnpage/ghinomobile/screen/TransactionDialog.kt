@@ -303,7 +303,7 @@ fun TransactionDialog(
                             )
                             if (transaction == null || transaction.id.isEmpty() || (!isPaymentMode && !isEditPaymentMode)) {
                                 Spinner(
-                                    options = listOf("Ghi nợ" to "debit", "Ghi có" to "credit"),
+                                    options = listOf("Nợ tôi" to "debit", "Tôi nợ" to "credit"),
                                     selected = type,
                                     onSelected = { type = it }
                                 )

@@ -91,7 +91,7 @@ fun createTransactionImage(
     paint.color = Color.White.toArgb() // Chữ trắng để nổi bật trên gradient
     paint.textSize = 40f
     paint.typeface = Typeface.DEFAULT_BOLD
-    canvas.drawText("Rượu-Gạo Tươi Hòa - Thông tin giao dịch", 50f, 80f, paint)
+    canvas.drawText("Thông tin giao dịch", 50f, 80f, paint)
 
     // Nội dung giao dịch
     paint.textSize = 30f
